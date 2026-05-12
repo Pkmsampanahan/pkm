@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Informasi Kehadiran Nakes - GARDENA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --primary: #db2777; 
+            --emerald: #10b981;
+            --bg: #f8fafc; 
+            --sat: env(safe-area-inset-top);
+            --sab: env(safe-area-inset-bottom);
+        }
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); margin: 0; overflow-x: hidden; }
+
+        .tv-container { 
+            width: 100%; 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            min-height: 100vh; 
+            padding: calc(20px + var(--sat)) 20px calc(80px + var(--sab)) 20px; 
+        }
+
+        /* Header Modern - Responsive */
+        .header-display {
+            background: linear-gradient(135deg, #db2777 0%, #6366f1 100%);
+            padding: 2rem;
+            border-radius: 30px;
+            color: white;
+            box-shadow: 0 15px 35px rgba(219, 39, 119, 0.2);
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .header-display {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                text-align: left;
+                padding: 30px 50px;
+            }
+        }
+
+        /* Status Grid - Auto Columns */
+        .nakes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        @media (min-width: 1024px) {
+            .nakes-grid {
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+                gap: 25px;
+            }
+        }
+
+        .nakes-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 25px;
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            transition: transform 0.3s ease;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+        .status-dot.active { background: var(--emerald); box-shadow: 0 0 12px var(--emerald); }
+        .status-dot.dl { background: #f59e0b; box-shadow: 0 0 12px #f59e0b; }
+        .status-dot.off { background: #cbd5e1; }
+
+        .badge-status {
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        /* --- ANIMATED TABLE STYLES --- */
+        .waiting-list-container {
+            background: white;
+            border-radius: 25px;
+            border: 1px solid rgba(0,0,0,0.05);
+            overflow: hidden;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+        .waiting-header {
+            background: #f1f5f9;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .scroll-wrapper {
+            height: 120px; /* Tinggi tabel animasi */
+            overflow: hidden;
+            position: relative;
+        }
+        .scroll-content {
+            display: flex;
+            flex-direction: column;
+            animation: scroll-vertical 15s linear infinite;
+        }
+        .scroll-content:hover { animation-play-state: paused; }
+        
+        .waiting-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f8fafc;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+        }
+        
+        @keyframes scroll-vertical {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+        /* --- END ANIMATED TABLE --- */
+
+        .running-text-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px;
+            z-index: 1000;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        marquee { font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 14px; }
+
+        .clock-section { display: flex; flex-direction: column; align-items: center; }
+        @media (min-width: 768px) { .clock-section { align-items: flex-end; } }
+        
+        #live-clock { font-size: 2.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+        #live-date { font-size: 11px; font-weight: 700; opacity: 0.8; text-transform: uppercase; margin-top: 5px; }
+
+        .skeleton { background: linear-gradient(110deg, #eceff1 8%, #f5f5f5 18%, #eceff1 33%); background-size: 200% 100%; animation: shine 1.5s linear infinite; }
+        @keyframes shine { to { background-position-x: -200%; } }
+
+        @media (max-width: 640px) {
+            .tv-container { padding: 15px; padding-bottom: 100px; }
+            #live-clock { font-size: 1.8rem; }
+            .header-display { border-radius: 20px; padding: 1.5rem; }
+            .nakes-card { padding: 1rem; border-radius: 20px; }
+            .nakes-card h3 { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="tv-container">
+    <div class="header-display">
+        <div>
+            <p class="text-[10px] md:text-xs font-black uppercase opacity-80 tracking-[0.2em] mb-1">UPTD Puskesmas Sampanahan</p>
+            <h1 class="text-2xl md:text-4xl font-extrabold tracking-tighter">INFORMASI PELAYANAN NAKES</h1>
+            <p class="text-[11px] md:text-sm font-bold opacity-90 mt-1">Status Kehadiran Petugas Medis Real-Time</p>
+        </div>
+        <div class="clock-section">
+            <div id="live-clock">00:00</div>
+            <div id="live-date">Memuat Hari...</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+        <div class="bg-emerald-500 p-5 md:p-6 rounded-[24px] text-white shadow-lg flex flex-col justify-center">
+            <p class="text-[9px] md:text-[10px] font-black uppercase opacity-80 tracking-wider">Tersedia di Tempat</p>
+            <h2 id="total-ready" class="text-3xl md:text-5xl font-black">0</h2>
+        </div>
+        <div class="bg-amber-500 p-5 md:p-6 rounded-[24px] text-white shadow-lg flex flex-col justify-center">
+            <p class="text-[9px] md:text-[10px] font-black uppercase opacity-80 tracking-wider">Tugas Dinas Luar</p>
+            <h2 id="total-dl" class="text-3xl md:text-5xl font-black">0</h2>
+        </div>
+        <div class="bg-slate-800 p-5 md:p-6 rounded-[24px] text-white shadow-lg flex flex-col justify-center">
+            <p class="text-[9px] md:text-[10px] font-black uppercase opacity-80 tracking-wider">Total Staf Medis</p>
+            <h2 id="total-nakes" class="text-3xl md:text-5xl font-black">0</h2>
+        </div>
+    </div>
+
+    <div class="waiting-list-container" id="waiting-section">
+        <div class="waiting-header">
+            <div class="flex items-center gap-2">
+                <span class="animate-pulse">⏳</span>
+                <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Menunggu Absensi / Belum Pulang</h3>
+            </div>
+            <span id="waiting-count" class="bg-rose-100 text-rose-600 px-3 py-1 rounded-full text-[9px] font-black">0 PETUGAS</span>
+        </div>
+        <div class="scroll-wrapper">
+            <div id="waiting-scroll-content" class="scroll-content">
+                </div>
+        </div>
+    </div>
+
+    <div id="public-nakes-list" class="nakes-grid">
+        <div class="nakes-card skeleton h-28"></div>
+        <div class="nakes-card skeleton h-28"></div>
+        <div class="nakes-card skeleton h-28"></div>
+        <div class="nakes-card skeleton h-28"></div>
+    </div>
+</div>
+
+<div class="running-text-container">
+    <marquee id="broadcast-display" scrollamount="8">Selamat Datang di UPTD Puskesmas Sampanahan - Melayani Dengan Sepenuh Hati - Pastikan Anda Mengambil Antrean Sesuai Poli Tujuan.</marquee>
+</div>
+
+<script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyDeWZyUvXj3qVOZXviPgN-d42jswXgkm2cvYlA7OBgGSPX-G_rxYti_rJWGVdpmi_f2A/exec";
+    
+    async function updatePublicDisplay() {
+        try {
+            const res = await fetch(`${WEB_APP_URL}?action=getData`);
+            const data = await res.json();
+            
+            const now = new Date();
+            const today = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
+            const logsToday = data.logs.filter(l => l.date === today);
+            const officers = [...new Set(data.officers)].sort();
+            
+            const container = document.getElementById('public-nakes-list');
+            const waitingContent = document.getElementById('waiting-scroll-content');
+            
+            let readyCount = 0;
+            let dlCount = 0;
+            let waitingOfficers = [];
+
+            const html = officers.map(name => {
+                const logs = logsToday.filter(l => l.name === name);
+                const isDL = logs.some(l => l.type === 'DL');
+                const hasIn = logs.some(l => l.type === 'MASUK');
+                const hasOut = logs.some(l => l.type === 'PULANG');
+                
+                let statusText = "BELUM HADIR";
+                let colorClass = "bg-slate-100 text-slate-400";
+                let dotClass = "off";
+                let subNote = "Sesuai Jadwal";
+
+                if (isDL) {
+                    statusText = "DINAS LUAR";
+                    colorClass = "bg-amber-100 text-amber-600";
+                    dotClass = "dl";
+                    const dlLog = logs.find(l => l.type === 'DL');
+                    subNote = dlLog.note || "Tugas Lapangan";
+                    dlCount++;
+                } else if (hasIn && !hasOut) {
+                    statusText = "ADA DI TEMPAT";
+                    colorClass = "bg-emerald-100 text-emerald-600";
+                    dotClass = "active";
+                    subNote = "Siap Melayani";
+                    readyCount++;
+                } else if (hasOut) {
+                    statusText = "SUDAH PULANG";
+                    colorClass = "bg-pink-100 text-pink-600";
+                    dotClass = "off";
+                    subNote = "Tugas Selesai";
+                } else {
+                    // Petugas yang benar-benar belum absen apa-apa
+                    waitingOfficers.push({ name, reason: "MENUNGGU MASUK" });
+                }
+
+                // Tambahan: Jika sudah masuk tapi belum pulang setelah jam 14:00 (misal jam pulang)
+                if (hasIn && !hasOut && !isDL && now.getHours() >= 14) {
+                    waitingOfficers.push({ name, reason: "BELUM ABSEN PULANG" });
+                }
+
+                return `
+                    <div class="nakes-card">
+                        <div class="w-14 h-14 md:w-16 md:h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-xl md:text-2xl font-black text-slate-400 shrink-0">
+                            ${name.charAt(0)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm md:text-lg font-black text-slate-800 uppercase leading-tight truncate">${name}</h3>
+                            <div class="flex items-center gap-2 mt-1">
+                                <div class="status-dot ${dotClass}"></div>
+                                <span class="badge-status ${colorClass}">${statusText}</span>
+                            </div>
+                            <p class="text-[9px] md:text-[10px] font-bold text-slate-400 mt-1 uppercase italic truncate opacity-70">${subNote}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Render Animated Waiting Table
+            const waitingHtml = waitingOfficers.map(off => `
+                <div class="waiting-item">
+                    <span class="text-[11px] font-black text-slate-700 uppercase">${off.name}</span>
+                    <span class="text-[9px] font-bold text-rose-500 text-right uppercase">${off.reason}</span>
+                </div>
+            `).join('');
+
+            // Duplikasi konten agar animasi scroll terlihat seamless (infinit)
+            waitingContent.innerHTML = waitingHtml + waitingHtml;
+            document.getElementById('waiting-count').innerText = `${waitingOfficers.length} PETUGAS`;
+            
+            // Sembunyikan section jika tidak ada yang ditunggu
+            document.getElementById('waiting-section').style.display = waitingOfficers.length > 0 ? 'block' : 'none';
+
+            container.innerHTML = html;
+            document.getElementById('total-ready').innerText = readyCount;
+            document.getElementById('total-dl').innerText = dlCount;
+            document.getElementById('total-nakes').innerText = officers.length;
+
+            if (data.config && data.config.BROADCAST_MSG) {
+                document.getElementById('broadcast-display').innerText = data.config.BROADCAST_MSG;
+            }
+
+        } catch (e) {
+            console.error("Gagal sinkron data publik:", e);
+        }
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const optionsDate = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        document.getElementById('live-clock').innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+        document.getElementById('live-date').innerText = now.toLocaleDateString('id-ID', optionsDate);
+    }
+
+    setInterval(updateClock, 1000);
+    setInterval(updatePublicDisplay, 30000); 
+    
+    window.onload = () => {
+        updateClock();
+        updatePublicDisplay();
+    };
+</script>
+
+</body>
+</html>
