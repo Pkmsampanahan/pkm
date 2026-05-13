@@ -8,8 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         :root { 
@@ -95,8 +94,15 @@
             text-transform: uppercase;
         }
 
+        /* HEATMAP STYLES */
+        .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .heatmap-cell { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 800; }
+        .level-low { background: #fee2e2; color: #ef4444; } 
+        .level-mid { background: #fef9c3; color: #ca8a04; } 
+        .level-high { background: #dcfce7; color: #16a34a; } 
+
         .scroll-area { max-height: 500px; overflow-y: auto; scrollbar-width: none; }
-        .skeleton { background: #e2e8f0; background: linear-gradient(110deg, #eceff1 8%, #f5f5f5 18%, #eceff1 33%); background-size: 200% 100%; animation: shine 1.5s linear infinite; }
+        .skeleton { background: linear-gradient(110deg, #eceff1 8%, #f5f5f5 18%, #eceff1 33%); background-size: 200% 100%; animation: shine 1.5s linear infinite; }
         @keyframes shine { to { background-position-x: -200%; } }
 
         .chart-container { width: 100%; height: 160px; margin-top: 15px; }
@@ -158,7 +164,7 @@
             .collapsible-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out; }
             .collapsible-content.active { max-height: 1000px; margin-top: 15px; }
             .accordion-header { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-            .accordion-header::after { content: ''; font-size: 8px; opacity: 0.5; transition: 0.3s; }
+            .accordion-header::after { content: '▼'; font-size: 8px; opacity: 0.5; transition: 0.3s; }
             .accordion-header.active::after { transform: rotate(180deg); }
         }
 
@@ -174,32 +180,18 @@
 <div id="pin-overlay">
     <div class="pin-card">
         <div class="w-16 h-16 bg-pink-100 dark:bg-pink-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl"></span>
+            <span class="text-2xl">🔐</span>
         </div>
         <h2 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">Admin Access</h2>
         <p class="text-[10px] font-bold text-slate-400 uppercase mb-8">Masukan PIN untuk melanjutkan</p>
-        
         <div class="pin-dot-container" id="dot-container">
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
-            <div class="pin-dot"></div>
+            <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
         </div>
-
         <div class="numpad">
-            <button class="num-btn" onclick="pressKey('1')">1</button>
-            <button class="num-btn" onclick="pressKey('2')">2</button>
-            <button class="num-btn" onclick="pressKey('3')">3</button>
-            <button class="num-btn" onclick="pressKey('4')">4</button>
-            <button class="num-btn" onclick="pressKey('5')">5</button>
-            <button class="num-btn" onclick="pressKey('6')">6</button>
-            <button class="num-btn" onclick="pressKey('7')">7</button>
-            <button class="num-btn" onclick="pressKey('8')">8</button>
-            <button class="num-btn" onclick="pressKey('9')">9</button>
-            <button class="num-btn text-rose-500 font-black" onclick="clearPin()">C</button>
-            <button class="num-btn" onclick="pressKey('0')">0</button>
-            <button class="num-btn text-indigo-500" onclick="window.history.back()"></button>
+            <button class="num-btn" onclick="pressKey('1')">1</button><button class="num-btn" onclick="pressKey('2')">2</button><button class="num-btn" onclick="pressKey('3')">3</button>
+            <button class="num-btn" onclick="pressKey('4')">4</button><button class="num-btn" onclick="pressKey('5')">5</button><button class="num-btn" onclick="pressKey('6')">6</button>
+            <button class="num-btn" onclick="pressKey('7')">7</button><button class="num-btn" onclick="pressKey('8')">8</button><button class="num-btn" onclick="pressKey('9')">9</button>
+            <button class="num-btn text-rose-500 font-black" onclick="clearPin()">C</button><button class="num-btn" onclick="pressKey('0')">0</button><button class="num-btn text-indigo-500" onclick="window.history.back()">⬅️</button>
         </div>
     </div>
 </div>
@@ -212,166 +204,76 @@
                 <p class="text-[10px] font-bold opacity-80 uppercase tracking-widest text-white">Monitoring GARDENA</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="toggleDarkMode()" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white"></button>
-                <button onclick="manualRefresh()" id="btn-refresh" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white"></button>
+                <button onclick="toggleDarkMode()" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white">🌓</button>
+                <button onclick="manualRefresh()" id="btn-refresh" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white">🔄</button>
             </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 mb-3">
             <div class="stat-card col-span-2">
-                <p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Persentase Kehadiran Hari Ini</p>
-                <div class="flex items-center justify-center gap-2">
-                    <h3 id="stat-percent" class="text-3xl font-black text-white">0%</h3>
-                    <div id="trend-percent" class="flex items-center"></div>
+                <p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Kehadiran & Tren Bulanan</p>
+                <div class="flex items-center justify-center gap-4">
+                    <div><h3 id="stat-percent" class="text-3xl font-black text-white">0%</h3><p class="text-[7px] font-black opacity-60 uppercase">Hari Ini</p></div>
+                    <div class="w-px h-8 bg-white/20"></div>
+                    <div><h3 id="late-trend-val" class="text-lg font-black text-white">0%</h3><p id="late-trend-label" class="text-[7px] font-black opacity-60 uppercase">Tren Terlambat</p></div>
                 </div>
-                <p id="avg-time-in" class="text-[9px] font-bold text-white/70 mt-1 uppercase">Rata-rata Masuk: --:--</p>
-                <div class="w-full bg-white/20 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div class="w-full bg-white/20 h-1.5 rounded-full mt-3 overflow-hidden">
                     <div id="stat-progress" class="bg-white h-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
-            <div class="stat-card">
-                <p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Total Nakes</p>
-                <h3 id="stat-total" class="text-xl font-black text-white">...</h3>
-            </div>
-            <div class="stat-card">
-                <p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Hadir Hari Ini</p>
-                <h3 id="stat-hadir" class="text-xl font-black text-white">...</h3>
-            </div>
-            <div class="stat-card">
-                <p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Dinas Luar</p>
-                <h3 id="stat-dl" class="text-xl font-black text-yellow-300">...</h3>
-            </div>
+            <div class="stat-card"><p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Total Nakes</p><h3 id="stat-total" class="text-xl font-black text-white">...</h3></div>
+            <div class="stat-card"><p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Hadir Hari Ini</p><h3 id="stat-hadir" class="text-xl font-black text-white">...</h3></div>
+            <div class="stat-card"><p class="text-[8px] font-black opacity-70 uppercase mb-1 text-white">Dinas Luar</p><h3 id="stat-dl" class="text-xl font-black text-yellow-300">...</h3></div>
         </div>
-        
-        <div class="chart-container">
-            <canvas id="weeklyChart"></canvas>
-        </div>
+        <div class="chart-container"><canvas id="weeklyChart"></canvas></div>
+    </div>
+
+    <div class="officer-list-card shadow-sm">
+        <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Heatmap Kehadiran Bulanan</h2>
+        <div id="heatmap-calendar" class="heatmap-grid"></div>
     </div>
 
     <div class="broadcast-card shadow-lg">
-        <h2 class="text-[11px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-            <span></span> Broadcast Pengumuman
-        </h2>
+        <h2 class="text-[11px] font-black uppercase tracking-widest mb-2 flex items-center gap-2"><span>📢</span> Broadcast Pengumuman</h2>
         <div class="flex gap-2">
-            <input type="text" id="broadcast-msg" placeholder="Tulis pesan untuk nakes..." class="w-full p-2 rounded-xl text-slate-800 text-xs font-bold outline-none border-none">
+            <input type="text" id="broadcast-msg" placeholder="Pesan untuk nakes..." class="w-full p-2 rounded-xl text-slate-800 text-xs font-bold outline-none border-none">
             <button onclick="sendBroadcast()" class="bg-white text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Kirim</button>
         </div>
     </div>
 
-    <div id="no-return-alert" class="alert-box hidden bg-amber-50 border-amber-200">
-        <div class="flex items-center gap-2 mb-2">
-            <span class="text-amber-500"></span>
-            <h2 class="text-[10px] font-black text-amber-600 uppercase">Belum Absen Pulang (> 16:00)</h2>
-        </div>
-        <div id="no-return-list" class="flex flex-wrap gap-2"></div>
-    </div>
-
     <div id="absent-alert" class="alert-box hidden">
-        <div class="flex items-center gap-2 mb-2">
-            <span class="text-rose-500"></span>
-            <h2 class="text-[10px] font-black text-rose-600 uppercase">Belum Absen (> 08:30)</h2>
-        </div>
+        <div class="flex items-center gap-2 mb-2"><span class="text-rose-500">🚫</span><h2 class="text-[10px] font-black text-rose-600 uppercase">Belum Absen (> 08:30)</h2></div>
         <div id="absent-list" class="flex flex-wrap gap-2"></div>
     </div>
 
     <div class="officer-list-card shadow-sm accordion-section" id="section-late">
-        <div class="accordion-header" onclick="toggleAccordion('late')">
-            <div class="flex items-center gap-2">
-                <span class="text-lg"></span>
-                <h2 class="text-[11px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Ringkasan Keterlambatan</h2>
-            </div>
-        </div>
-        <div class="collapsible-content">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-[9px] font-bold uppercase text-slate-500 dark:text-slate-400">
-                    <thead class="border-b border-slate-100 dark:border-slate-700">
-                        <tr>
-                            <th class="py-2">Nama</th>
-                            <th class="py-2 text-center">Frekuensi</th>
-                            <th class="py-2 text-right">Total Menit</th>
-                        </tr>
-                    </thead>
-                    <tbody id="late-summary-body"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="officer-list-card shadow-sm accordion-section" id="section-dl-active">
-        <div class="accordion-header" onclick="toggleAccordion('dl-active')">
-            <div class="flex items-center gap-2">
-                <span class="text-lg"></span>
-                <h2 class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Dinas Luar Aktif</h2>
-            </div>
-        </div>
-        <div id="dl-active-list" class="collapsible-content space-y-2"></div>
+        <div class="accordion-header" onclick="toggleAccordion('late')"><div class="flex items-center gap-2"><span class="text-lg">⏰</span><h2 class="text-[11px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Ringkasan Keterlambatan</h2></div></div>
+        <div class="collapsible-content"><div class="overflow-x-auto"><table class="w-full text-left text-[9px] font-bold uppercase text-slate-500 dark:text-slate-400"><thead class="border-b border-slate-100 dark:border-slate-700"><tr><th class="py-2">Nama</th><th class="py-2 text-center">Frekuensi</th><th class="py-2 text-right">Total Menit</th></tr></thead><tbody id="late-summary-body"></tbody></table></div></div>
     </div>
 
     <div class="officer-list-card shadow-sm accordion-section" id="section-officers">
-        <div class="accordion-header" onclick="toggleAccordion('officers')">
-            <div class="flex items-center gap-2">
-                <span class="text-lg"></span>
-                <h2 class="text-[11px] font-black text-primary dark:text-pink-400 uppercase tracking-widest">Daftar Petugas Lengkap</h2>
-            </div>
-        </div>
-        <div id="full-officer-list" class="collapsible-content space-y-2 overflow-y-auto pr-2" style="scrollbar-width: thin;"></div>
-    </div>
-
-    <div class="leaderboard-card shadow-sm accordion-section" id="section-leaderboard">
-        <div class="accordion-header" onclick="toggleAccordion('leaderboard')">
-            <div class="flex items-center gap-2">
-                <span class="text-lg"></span>
-                <h2 class="text-[11px] font-black text-pink-600 dark:text-pink-400 uppercase tracking-widest">Top 5 Disiplin Bulan Ini</h2>
-            </div>
-        </div>
-        <div id="leaderboard-list" class="collapsible-content space-y-3"></div>
+        <div class="accordion-header" onclick="toggleAccordion('officers')"><div class="flex items-center gap-2"><span class="text-lg">👥</span><h2 class="text-[11px] font-black text-primary dark:text-pink-400 uppercase tracking-widest">Daftar Petugas</h2></div></div>
+        <div id="full-officer-list" class="collapsible-content space-y-2 max-h-60 overflow-y-auto"></div>
     </div>
 
     <div class="main-card accordion-section" id="section-controls">
-        <div class="accordion-header" onclick="toggleAccordion('controls')">
-            <h2 class="text-xs font-black text-slate-400 uppercase tracking-widest">Kontrol Data & Filter</h2>
-        </div>
+        <div class="accordion-header" onclick="toggleAccordion('controls')"><h2 class="text-xs font-black text-slate-400 uppercase tracking-widest">Kontrol & Filter</h2></div>
         <div class="collapsible-content space-y-3">
             <div class="flex justify-end gap-2 mb-2">
                 <button onclick="triggerArchive()" class="text-blue-500 font-black text-[10px] uppercase">Archive</button>
-                <button onclick="downloadPDF()" class="text-pink-600 font-black text-[10px] uppercase">PDF</button>
                 <button onclick="downloadExcel()" class="text-emerald-500 font-black text-[10px] uppercase">Excel</button>
             </div>
-            <input type="text" id="search-name" oninput="applyFilters()" placeholder="Cari nama petugas..." class="filter-input">
+            <input type="text" id="search-name" oninput="applyFilters()" placeholder="Cari nama..." class="filter-input">
             <div class="grid grid-cols-2 gap-2">
-                <select id="filter-month" onchange="applyFilters()" class="filter-input">
-                    <option value="01">Januari</option><option value="02">Februari</option>
-                    <option value="03">Maret</option><option value="04">April</option>
-                    <option value="05">Mei</option><option value="06">Juni</option>
-                    <option value="07">Juli</option><option value="08">Agustus</option>
-                    <option value="09">September</option><option value="10">Oktober</option>
-                    <option value="11">November</option><option value="12">Desember</option>
+                <select id="filter-month" onchange="applyFilters(); renderHeatmap();" class="filter-input">
+                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
                 </select>
-                <select id="filter-year" onchange="applyFilters()" class="filter-input">
-                    <option value="2025">2025</option><option value="2026">2026</option>
-                </select>
-            </div>
-            <select id="filter-status" onchange="applyFilters()" class="filter-input bg-slate-50 border-pink-100">
-                <option value="SEMUA">SEMUA STATUS</option>
-                <option value="HADIR">HADIR TEPAT WAKTU</option>
-                <option value="TERLAMBAT">TERLAMBAT</option>
-                <option value="DL">DINAS LUAR (DL)</option>
-                <option value="PULANG">PULANG</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="officer-list-card shadow-sm accordion-section" id="section-audit">
-        <div class="accordion-header" onclick="toggleAccordion('audit')">
-            <div class="flex items-center gap-2">
-                <span class="text-lg"></span>
-                <h2 class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Log Audit Admin</h2>
+                <select id="filter-year" onchange="applyFilters(); renderHeatmap();" class="filter-input"><option value="2025">2025</option><option value="2026">2026</option></select>
             </div>
         </div>
-        <div id="audit-log-list" class="collapsible-content space-y-2 max-h-40 overflow-y-auto pr-2"></div>
     </div>
 
     <div class="px-5">
@@ -387,9 +289,7 @@
         <button onclick="deleteSelected()" class="bg-white text-rose-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Hapus Masal</button>
     </div>
 
-    <div class="mt-10 text-center">
-        <button onclick="window.history.back()" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest underline">Kembali ke Aplikasi</button>
-    </div>
+    <div class="mt-10 text-center"><button onclick="window.history.back()" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest underline">Kembali ke Aplikasi</button></div>
 </div>
 
 <script>
@@ -397,111 +297,70 @@
     const SECRET_PIN = "12345";
     let currentPin = "";
     let fullData = { officers: [], logs: [] };
-    let auditLogs = JSON.parse(localStorage.getItem('gardena_audit')) || [];
     let selectedRows = [];
-    let touchStartX = 0;
     let attendanceChart = null;
+
+    // --- FIX: FUNGSI FORMAT WAKTU AGAR TIDAK MUNCUL 1899 ---
+    function formatTime(t) {
+        if (!t || t === "--:--") return "--:--";
+        // Jika input string mengandung informasi tanggal ISO (T)
+        if (typeof t === 'string' && t.includes('T')) {
+            const dateObj = new Date(t);
+            if (!isNaN(dateObj.getTime())) {
+                return dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
+        }
+        // Jika input sudah string waktu murni HH:mm
+        if (typeof t === 'string' && t.includes(':') && t.length <= 8) {
+            return t.substring(0, 5);
+        }
+        // Jika input objek Date
+        const d = new Date(t);
+        if (!isNaN(d.getTime())) {
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+        }
+        return t; 
+    }
 
     function pressKey(num) {
         if (currentPin.length < 5) {
-            currentPin += num;
-            updatePinDots();
-            if (currentPin.length === 5) {
-                setTimeout(validatePin, 250);
-            }
+            currentPin += num; updatePinDots();
+            if (currentPin.length === 5) setTimeout(validatePin, 250);
         }
     }
-
-    function clearPin() {
-        currentPin = "";
-        updatePinDots();
-    }
-
-    function updatePinDots() {
-        const dots = document.querySelectorAll('.pin-dot');
-        dots.forEach((dot, i) => {
-            if (i < currentPin.length) dot.classList.add('active');
-            else dot.classList.remove('active');
-        });
-    }
-
+    function clearPin() { currentPin = ""; updatePinDots(); }
+    function updatePinDots() { document.querySelectorAll('.pin-dot').forEach((dot, i) => i < currentPin.length ? dot.classList.add('active') : dot.classList.remove('active')); }
     function validatePin() {
         if (currentPin === SECRET_PIN) {
-            const overlay = document.getElementById('pin-overlay');
-            overlay.style.transition = "0.5s opacity";
-            overlay.style.opacity = "0";
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                initAdmin();
-            }, 500);
-        } else {
-            const card = document.querySelector('.pin-card');
-            card.style.animation = "shake 0.4s";
-            setTimeout(() => card.style.animation = "", 400);
-            alert("PIN SALAH!");
-            clearPin();
-        }
+            document.getElementById('pin-overlay').style.display = 'none'; initAdmin();
+        } else { alert("PIN SALAH!"); clearPin(); }
     }
 
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = `
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-    `;
-    document.head.appendChild(styleSheet);
-
-    function formatTime(t) {
-        if (!t) return "--:--";
-        if (typeof t === 'string' && t.includes(':')) {
-            const parts = t.split(':');
-            return `${parts[0].padStart(2,'0')}:${parts[1].padStart(2,'0')}`;
-        }
-        const d = new Date(t);
-        return isNaN(d.getTime()) ? "--:--" : d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
-    }
-
-    function toggleDarkMode() {
-        document.body.classList.toggle('dark');
-        localStorage.setItem('gardena_dark', document.body.classList.contains('dark'));
-    }
-
+    function toggleDarkMode() { document.body.classList.toggle('dark'); localStorage.setItem('gardena_dark', document.body.classList.contains('dark')); }
     function toggleAccordion(targetId) {
-        if (window.innerWidth > 640) return;
-        const sections = ['officers', 'leaderboard', 'controls', 'late', 'dl-active', 'audit'];
-        sections.forEach(id => {
-            const header = document.querySelector(`#section-${id} .accordion-header`);
+        ['late', 'officers', 'controls'].forEach(id => {
             const content = document.querySelector(`#section-${id} .collapsible-content`);
-            if (header && content) {
-                if (id === targetId) {
-                    const isOpen = content.classList.contains('active');
-                    header.classList.toggle('active', !isOpen);
-                    content.classList.toggle('active', !isOpen);
-                } else {
-                    header.classList.remove('active');
-                    content.classList.remove('active');
-                }
-            }
+            if (id === targetId) content.classList.toggle('active'); else content?.classList.remove('active');
         });
     }
 
     async function initAdmin() {
         if (localStorage.getItem('gardena_dark') === 'true') document.body.classList.add('dark');
-        if (window.innerWidth <= 640) {
-            const defaultSect = document.querySelector('#section-controls .accordion-header');
-            if (defaultSect) {
-                defaultSect.classList.add('active');
-                document.querySelector('#section-controls .collapsible-content').classList.add('active');
-            }
-        }
         const now = new Date();
         document.getElementById('filter-month').value = (now.getMonth() + 1).toString().padStart(2, '0');
         document.getElementById('filter-year').value = now.getFullYear();
         await loadData();
-        renderAuditLogs();
+        checkAutoArchive();
         setInterval(() => loadData(true), 30000);
+    }
+
+    function checkAutoArchive() {
+        const today = new Date();
+        if (today.getDate() === 1 && !localStorage.getItem('archived_' + today.getMonth())) {
+            triggerArchive(true); localStorage.setItem('archived_' + today.getMonth(), 'true');
+        }
     }
 
     async function loadData(isSilent = false) {
@@ -509,286 +368,76 @@
         try {
             const res = await fetch(`${WEB_APP_URL}?action=getData`);
             fullData = await res.json();
-            updateStats();
-            renderChart();
-            renderLeaderboard();
-            renderFullOfficerList();
-            renderLateSummary();
-            renderDLActive();
-            applyFilters();
-            checkAbsentees();
-            checkNoReturn();
-        } catch (e) { console.error("Error loading data:", e); }
-    }
-
-    function checkNoReturn() {
-        const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
-        const logsToday = fullData.logs.filter(l => l.date === today);
-        const hadirNames = logsToday.filter(l => l.type === 'MASUK' || l.type === 'DL').map(l => l.name);
-        const pulangNames = logsToday.filter(l => l.type === 'PULANG').map(l => l.name);
-        const noReturn = hadirNames.filter(name => !pulangNames.includes(name));
-        const alertBox = document.getElementById('no-return-alert');
-        if (noReturn.length > 0 && new Date().getHours() >= 16) {
-            alertBox.classList.remove('hidden');
-            document.getElementById('no-return-list').innerHTML = noReturn.map(name => `<span class="px-2 py-1 bg-amber-100 text-amber-700 text-[8px] font-black rounded-lg uppercase">${name}</span>`).join('');
-        } else {
-            alertBox.classList.add('hidden');
-        }
-    }
-
-    function renderLateSummary() {
-        const month = document.getElementById('filter-month').value;
-        const lates = {};
-        fullData.logs.filter(l => l.date.split('/')[1] === month && l.type === 'MASUK').forEach(l => {
-            if (l.status?.toUpperCase().includes('TERLAMBAT')) {
-                if (!lates[l.name]) lates[l.name] = { count: 0, totalMin: 0 };
-                lates[l.name].count++;
-                const mins = parseInt(l.status.match(/\d+/) || [0]);
-                lates[l.name].totalMin += mins;
-            }
-        });
-        const sortedLates = Object.entries(lates).sort((a,b) => b[1].count - a[1].count);
-        document.getElementById('late-summary-body').innerHTML = sortedLates.map(([name, data]) => `
-            <tr class="border-b border-slate-50 dark:border-slate-800">
-                <td class="py-3 text-slate-700 dark:text-white">${name}</td>
-                <td class="py-3 text-center text-rose-500">${data.count}x</td>
-                <td class="py-3 text-right text-slate-400">${data.totalMin} Menit</td>
-            </tr>
-        `).join('') || '<tr><td colspan="3" class="py-10 text-center opacity-50 uppercase">Semua Petugas Disiplin</td></tr>';
-    }
-
-    function renderDLActive() {
-        const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
-        const dlActive = fullData.logs.filter(l => l.date === today && l.type === 'DL');
-        document.getElementById('dl-active-list').innerHTML = dlActive.map(l => `
-            <div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex justify-between items-center">
-                <div>
-                    <p class="text-[10px] font-black text-indigo-700 dark:text-indigo-300 uppercase">${l.name}</p>
-                    <p class="text-[8px] font-bold text-indigo-400 italic">"${l.note || 'Tugas Luar'}"</p>
-                </div>
-                <button onclick="alert('Lokasi petugas: Dalam Jangkauan GPS Kotabaru')" class="text-[8px] font-black text-indigo-600 underline uppercase">Lihat Lokasi</button>
-            </div>
-        `).join('') || '<p class="text-center text-[9px] text-slate-400 py-4 uppercase">Tidak ada petugas DL saat ini</p>';
-    }
-
-    async function sendBroadcast() {
-        const msgInput = document.getElementById('broadcast-msg');
-        const msg = msgInput.value;
-        if (!msg) return;
-        showLoading(true);
-        try {
-            await fetch(`${WEB_APP_URL}?action=sendBroadcast&data=${encodeURIComponent(msg)}`);
-            addAuditLog(`Admin mengirim broadcast: "${msg.substring(0, 20)}..."`);
-            alert("Pesan berhasil dikirim!");
-            msgInput.value = "";
-        } catch (e) { alert("Gagal mengirim pesan"); }
-        showLoading(false);
-    }
-
-    function addAuditLog(action) {
-        const log = { time: new Date().toLocaleString('id-ID'), action: action };
-        auditLogs.unshift(log);
-        if (auditLogs.length > 50) auditLogs.pop();
-        localStorage.setItem('gardena_audit', JSON.stringify(auditLogs));
-        renderAuditLogs();
-    }
-
-    function renderAuditLogs() {
-        document.getElementById('audit-log-list').innerHTML = auditLogs.map(l => `
-            <div class="audit-item">
-                <p class="text-[9px] font-black text-slate-700 dark:text-white uppercase">${l.action}</p>
-                <p class="text-[8px] font-bold text-slate-400">${l.time}</p>
-            </div>
-        `).join('') || '<p class="text-center text-[8px] opacity-50 py-2">Belum ada aktivitas admin</p>';
+            updateStats(); renderChart(); renderHeatmap(); renderFullOfficerList(); renderLateSummary(); applyFilters(); checkAbsentees();
+        } catch (e) { console.error(e); }
     }
 
     function updateStats() {
         const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
-        const yesterdayDate = new Date();
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterday = yesterdayDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
+        const uniqueOfficers = [...new Set(fullData.officers)].length;
         const logsToday = fullData.logs.filter(l => l.date === today);
-        const logsYesterday = fullData.logs.filter(l => l.date === yesterday);
-        const uniqueOfficers = [...new Set(fullData.officers)];
-        const totalNakes = uniqueOfficers.length;
         const hadirToday = [...new Set(logsToday.filter(l => l.type === 'MASUK' || l.type === 'DL').map(l => l.name))].length;
-        const hadirYesterday = [...new Set(logsYesterday.filter(l => l.type === 'MASUK' || l.type === 'DL').map(l => l.name))].length;
         
-        // PERBAIKAN NAN:NAN LOGIC
-        const masukTimes = logsToday.filter(l => l.type === 'MASUK').map(l => {
-            const timeStr = formatTime(l.time);
-            if (timeStr === "--:--") return null;
-            const [h, m] = timeStr.split(':').map(Number);
-            return (isNaN(h) || isNaN(m)) ? null : h * 60 + m;
-        }).filter(t => t !== null); 
-        
-        const avgTimeEl = document.getElementById('avg-time-in');
-        if (masukTimes.length > 0) {
-            const avgMin = Math.round(masukTimes.reduce((a,b) => a+b) / masukTimes.length);
-            const h = Math.floor(avgMin/60).toString().padStart(2,'0');
-            const m = (avgMin%60).toString().padStart(2,'0');
-            avgTimeEl.innerText = `Rata-rata Masuk: ${h}:${m}`;
-        } else {
-            avgTimeEl.innerText = `Rata-rata Masuk: --:--`;
-        }
+        const monthNow = document.getElementById('filter-month').value;
+        const monthPrev = (parseInt(monthNow) - 1).toString().padStart(2, '0');
+        const lateCount = (m) => fullData.logs.filter(l => l.date.split('/')[1] === m && l.status?.toUpperCase().includes('TERLAMBAT')).length;
+        const countNow = lateCount(monthNow); const countPrev = lateCount(monthPrev);
 
-        const percentToday = totalNakes > 0 ? Math.round((hadirToday/totalNakes)*100) : 0;
-        const percentYesterday = totalNakes > 0 ? Math.round((hadirYesterday/totalNakes)*100) : 0;
-        document.getElementById('stat-percent').innerText = percentToday + "%";
-        document.getElementById('stat-progress').style.width = percentToday + "%";
-        const trendEl = document.getElementById('trend-percent');
-        if (percentToday > percentYesterday) trendEl.innerHTML = `<span class="trend-up"> ${percentToday-percentYesterday}%</span>`;
-        else if (percentToday < percentYesterday) trendEl.innerHTML = `<span class="trend-down"> ${percentYesterday-percentToday}%</span>`;
-        else trendEl.innerHTML = "";
-        document.getElementById('stat-total').innerText = totalNakes;
+        const trendEl = document.getElementById('late-trend-val');
+        if (countPrev > 0) {
+            const diff = Math.round(((countNow - countPrev) / countPrev) * 100);
+            trendEl.innerText = (diff > 0 ? '+' : '') + diff + "%";
+            trendEl.className = `text-lg font-black ${diff > 0 ? 'text-rose-300' : 'text-emerald-300'}`;
+        }
+        document.getElementById('stat-percent').innerText = Math.round((hadirToday/uniqueOfficers)*100) + "%";
+        document.getElementById('stat-progress').style.width = (hadirToday/uniqueOfficers)*100 + "%";
+        document.getElementById('stat-total').innerText = uniqueOfficers;
         document.getElementById('stat-hadir').innerText = hadirToday;
         document.getElementById('stat-dl').innerText = logsToday.filter(l => l.type === 'DL').length;
     }
 
-    function checkAbsentees() {
-        const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
-        const hadirNames = fullData.logs.filter(l => l.date === today && (l.type === 'MASUK' || l.type === 'DL')).map(l => l.name);
-        const uniqueOfficers = [...new Set(fullData.officers)];
-        const absent = uniqueOfficers.filter(name => !hadirNames.includes(name));
-        const alertBox = document.getElementById('absent-alert');
-        const now = new Date();
-        const cutoffReached = now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() >= 30);
-        if (absent.length > 0 && cutoffReached) {
-            alertBox.classList.remove('hidden');
-            document.getElementById('absent-list').innerHTML = absent.map(name => `<span class="px-2 py-1 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-[8px] font-black rounded-lg uppercase">${name}</span>`).join('');
-        } else { alertBox.classList.add('hidden'); }
-    }
-
-    function renderFullOfficerList() {
-        const uniqueOfficers = [...new Set(fullData.officers)];
-        const today = new Date().toLocaleDateString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\./g,'/');
-        document.getElementById('full-officer-list').innerHTML = uniqueOfficers.map((name, i) => `
-            <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-                <div class="flex items-center gap-3">
-                    <span class="text-[10px] font-bold text-slate-400">${(i + 1).toString().padStart(2, '0')}</span>
-                    <p class="text-[10px] font-black text-slate-700 dark:text-white uppercase">${name}</p>
-                </div>
-                <span class="w-2 h-2 rounded-full ${fullData.logs.some(l => l.name === name && l.date === today) ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
-            </div>`).join('') || '<p class="text-center text-[9px] text-slate-400 py-4 uppercase">Data petugas belum dimuat</p>';
+    function renderHeatmap() {
+        const container = document.getElementById('heatmap-calendar');
+        const month = parseInt(document.getElementById('filter-month').value);
+        const year = parseInt(document.getElementById('filter-year').value);
+        const uniqueOfficers = [...new Set(fullData.officers)].length;
+        const daysInMonth = new Date(year, month, 0).getDate();
+        let html = '';
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${d.toString().padStart(2,'0')}/${month.toString().padStart(2,'0')}/${year}`;
+            const hadir = [...new Set(fullData.logs.filter(l => l.date === dateStr && (l.type === 'MASUK' || l.type === 'DL')).map(l => l.name))].length;
+            const percent = (hadir / uniqueOfficers) * 100;
+            const lvl = percent > 80 ? 'level-high' : percent > 50 ? 'level-mid' : 'level-low';
+            html += `<div class="heatmap-cell ${lvl}">${d}</div>`;
+        }
+        container.innerHTML = html;
     }
 
     function applyFilters() {
         const nameQ = document.getElementById('search-name').value.toLowerCase();
         const month = document.getElementById('filter-month').value;
         const year = document.getElementById('filter-year').value;
-        const statusQ = document.getElementById('filter-status').value;
-        const container = document.getElementById('admin-log-list');
         const filtered = fullData.logs.filter(l => {
             const dp = l.date.split('/');
-            const matchesName = l.name.toLowerCase().includes(nameQ);
-            const matchesDate = dp[1] === month && dp[2] === year;
-            let matchesStatus = true;
-            if (statusQ === "HADIR") matchesStatus = l.type === "MASUK" && (!l.status || !l.status.toUpperCase().includes("TERLAMBAT"));
-            else if (statusQ === "TERLAMBAT") matchesStatus = l.status?.toUpperCase().includes("TERLAMBAT");
-            else if (statusQ === "DL") matchesStatus = l.type === "DL";
-            else if (statusQ === "PULANG") matchesStatus = l.type === "PULANG";
-            return matchesName && matchesDate && matchesStatus;
+            return l.name.toLowerCase().includes(nameQ) && dp[1] === month && dp[2] === year;
         });
-        container.innerHTML = filtered.map((l, idx) => {
-            const rowId = l.row || idx;
-            return `
-            <div class="swipe-container" ontouchstart="handleTS(event)" ontouchmove="handleTM(event, ${rowId})" ontouchend="handleTE(event, ${rowId})">
-                <div class="swipe-action" onclick="deleteLog(${rowId}, '${l.name}')"></div>
-                <div id="log-${rowId}" class="log-item shadow-sm">
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" value="${rowId}" onchange="updateSelection()" ${selectedRows.includes(rowId) ? 'checked' : ''} class="w-4 h-4 rounded border-slate-300">
-                        <div>
-                            <p class="text-xs font-black text-slate-800 dark:text-white uppercase">${l.name}</p>
-                            <p class="text-[9px] font-bold text-slate-400 uppercase">${l.date} � ${formatTime(l.time)}</p>
-                            ${l.type === 'DL' ? `<p class="text-[8px] font-bold text-indigo-500 mt-1 italic"> ${l.note || 'Dinas Luar'}</p>` : ''}
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span class="status-pill ${getStatusColor(l.type)}">${l.type}</span>
-                        <p class="text-[8px] font-black mt-1 uppercase ${l.status?.toUpperCase().includes('TERLAMBAT') ? 'text-rose-500 animate-pulse' : 'text-slate-400'}">${l.status || 'OK'}</p>
-                    </div>
+        document.getElementById('admin-log-list').innerHTML = filtered.map((l, idx) => `
+            <div class="swipe-container">
+                <div class="swipe-action" onclick="deleteLog(${l.row || idx}, '${l.name}')">🗑️</div>
+                <div id="log-${l.row || idx}" class="log-item shadow-sm">
+                    <div class="flex items-center gap-3"><input type="checkbox" onchange="updateSelection()" value="${l.row || idx}"><div><p class="text-xs font-black uppercase text-slate-800 dark:text-white">${l.name}</p><p class="text-[9px] font-bold text-slate-400">${l.date} • ${formatTime(l.time)}</p></div></div>
+                    <div class="text-right"><span class="status-pill ${l.type==='MASUK'?'bg-emerald-100 text-emerald-600':'bg-pink-100 text-pink-600'}">${l.type}</span></div>
                 </div>
-            </div>`;
-        }).join('') || '<p class="text-center text-[10px] text-slate-300 py-10 font-bold uppercase">Data Kosong</p>';
+            </div>`).join('') || '<p class="text-center text-[10px] text-slate-300 py-10 uppercase">Data Kosong</p>';
     }
 
-    function handleTS(e) { touchStartX = e.touches[0].clientX; }
-    function handleTM(e, id) {
-        const diff = touchStartX - e.touches[0].clientX;
-        const el = document.getElementById(`log-${id}`);
-        if (el && diff > 0 && diff < 100) el.style.transform = `translateX(-${diff}px)`;
-    }
-    function handleTE(e, id) {
-        const el = document.getElementById(`log-${id}`);
-        if (!el) return;
-        if (touchStartX - e.changedTouches[0].clientX > 50) el.style.transform = `translateX(-80px)`;
-        else el.style.transform = `translateX(0)`;
-    }
-
-    function updateSelection() {
-        const checkboxes = document.querySelectorAll('#admin-log-list input[type="checkbox"]:checked');
-        selectedRows = Array.from(checkboxes).map(cb => parseInt(cb.value));
-        document.getElementById('multi-action-bar').style.display = selectedRows.length > 0 ? 'flex' : 'none';
-        document.getElementById('select-count').innerText = `${selectedRows.length} Terpilih`;
-    }
-
-    function toggleSelectAll() {
-        const checkboxes = document.querySelectorAll('#admin-log-list input[type="checkbox"]');
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
-        updateSelection();
-    }
-
-    async function deleteSelected() {
-        if (!confirm(`Hapus ${selectedRows.length} data terpilih?`)) return;
-        showLoading(true);
-        for (let id of selectedRows) { try { await fetch(`${WEB_APP_URL}?action=deleteLog&data=${id}`); } catch(e) {} }
-        addAuditLog(`Admin menghapus masal ${selectedRows.length} data`);
-        selectedRows = []; updateSelection(); await loadData(); showLoading(false);
-    }
-
-    async function deleteLog(rowId, name) {
-        if (!confirm(`Hapus data absensi milik ${name}?`)) return;
-        showLoading(true);
-        try {
-            await fetch(`${WEB_APP_URL}?action=deleteLog&data=${rowId}`);
-            addAuditLog(`Admin menghapus log: ${name}`);
-            await loadData();
-        } catch(e) { alert("Gagal menghapus data"); }
-        showLoading(false);
-    }
-
-    function showLoading(s) { document.body.style.opacity = s ? "0.5" : "1"; }
-    function getStatusColor(t) { 
-        return t==='MASUK'?'bg-emerald-100 text-emerald-600':
-               t==='PULANG'?'bg-pink-100 text-pink-600':
-               t==='DL'?'bg-amber-100 text-amber-600':'bg-slate-100'; 
-    }
-
-    function renderLeaderboard() {
-        const month = document.getElementById('filter-month').value;
-        const stats = {};
-        fullData.logs.forEach(l => {
-            if (l.date.split('/')[1] === month && (l.type === 'MASUK' || l.type === 'DL')) {
-                if (!stats[l.name]) stats[l.name] = { score: 0 };
-                stats[l.name].score += l.status?.toUpperCase().includes("TERLAMBAT") ? 0.5 : 1;
-            }
-        });
-        const top5 = Object.entries(stats).sort((a,b) => b[1].score - a[1].score).slice(0,5);
-        document.getElementById('leaderboard-list').innerHTML = top5.map(([name, data], i) => `
-            <div class="flex items-center justify-between bg-white dark:bg-slate-700 p-3 rounded-xl border border-pink-50 dark:border-slate-600">
-                <div class="flex items-center gap-3">
-                    <div class="w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-black ${i===0?'bg-yellow-400 text-white':i===1?'bg-slate-300':i===2?'bg-orange-300':'bg-pink-100 text-pink-600'}">${i+1}</div>
-                    <p class="text-[10px] font-black text-slate-700 dark:text-white uppercase">${name}</p>
-                </div>
-                <p class="text-[9px] font-extrabold text-pink-500">${data.score} Pts</p>
-            </div>`).join('') || '<p class="text-center text-[9px] text-slate-400 py-4 uppercase">Belum ada data skor</p>';
+    async function triggerArchive(isSilent = false) {
+        if(!isSilent && !confirm("Arsipkan data bulan lalu?")) return;
+        try { await fetch(`${WEB_APP_URL}?action=archiveData`); if(!isSilent) loadData(); } catch(e) { console.error(e); }
     }
 
     function renderChart() {
-        const canvas = document.getElementById('weeklyChart');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
+        const ctx = document.getElementById('weeklyChart').getContext('2d');
         const last7 = []; const counts = [];
         for(let i=6; i>=0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
@@ -803,34 +452,44 @@
         });
     }
 
-    async function manualRefresh() {
-        const btn = document.getElementById('btn-refresh');
-        btn.classList.add('animate-spin'); await loadData(); btn.classList.remove('animate-spin');
+    function checkAbsentees() {
+        const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
+        const hadir = fullData.logs.filter(l => l.date === today && (l.type==='MASUK'||l.type==='DL')).map(l => l.name);
+        const absent = [...new Set(fullData.officers)].filter(n => !hadir.includes(n));
+        const alertBox = document.getElementById('absent-alert');
+        if (absent.length > 0 && new Date().getHours() >= 8) {
+            alertBox.classList.remove('hidden');
+            document.getElementById('absent-list').innerHTML = absent.map(n => `<span class="px-2 py-1 bg-rose-100 text-rose-700 text-[8px] font-black rounded-lg uppercase">${n}</span>`).join('');
+        } else alertBox.classList.add('hidden');
     }
 
+    function renderFullOfficerList() {
+        document.getElementById('full-officer-list').innerHTML = [...new Set(fullData.officers)].map((n, i) => `
+            <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 mb-1">
+                <div class="flex items-center gap-3"><span class="text-[10px] text-slate-400">${i+1}</span><p class="text-[10px] font-black uppercase">${n}</p></div>
+            </div>`).join('');
+    }
+
+    async function sendBroadcast() {
+        const msg = document.getElementById('broadcast-msg').value; if (!msg) return;
+        try { await fetch(`${WEB_APP_URL}?action=sendBroadcast&data=${encodeURIComponent(msg)}`); alert("Terkirim!"); document.getElementById('broadcast-msg').value = ""; } catch(e) {}
+    }
+
+    function manualRefresh() { document.getElementById('btn-refresh').classList.add('animate-spin'); loadData().then(() => document.getElementById('btn-refresh').classList.remove('animate-spin')); }
     function showSkeletons() { document.getElementById('admin-log-list').innerHTML = '<div class="h-16 w-full skeleton rounded-xl mb-2"></div>'.repeat(5); }
-
-    async function triggerArchive() {
-        if(!confirm("Arsipkan data tahun lalu?")) return;
-        showLoading(true); 
-        try { await fetch(`${WEB_APP_URL}?action=archiveData`); addAuditLog("Admin melakukan pengarsipan data"); await loadData(); } catch(e) { alert("Gagal mengarsipkan"); }
-        showLoading(false);
+    function downloadExcel() { const ws = XLSX.utils.json_to_sheet(fullData.logs); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data"); XLSX.writeFile(wb, `GARDENA_MONITOR.xlsx`); }
+    function updateSelection() { const count = document.querySelectorAll('#admin-log-list input[type="checkbox"]:checked').length; document.getElementById('multi-action-bar').style.display = count > 0 ? 'flex' : 'none'; document.getElementById('select-count').innerText = `${count} Terpilih`; }
+    function toggleSelectAll() { const cbs = document.querySelectorAll('#admin-log-list input[type="checkbox"]'); const all = Array.from(cbs).every(c => c.checked); cbs.forEach(c => c.checked = !all); updateSelection(); }
+    async function deleteLog(id, name) { if(confirm(`Hapus ${name}?`)) { await fetch(`${WEB_APP_URL}?action=deleteLog&data=${id}`); loadData(); } }
+    async function deleteSelected() { const ids = Array.from(document.querySelectorAll('#admin-log-list input[type="checkbox"]:checked')).map(c => c.value); if(confirm(`Hapus ${ids.length} data?`)) { for(let id of ids) await fetch(`${WEB_APP_URL}?action=deleteLog&data=${id}`); loadData(); } }
+    function renderLateSummary() {
+        const lates = {};
+        fullData.logs.filter(l => l.status?.toUpperCase().includes('TERLAMBAT')).forEach(l => {
+            if (!lates[l.name]) lates[l.name] = { count: 0, totalMin: 0 };
+            lates[l.name].count++; lates[l.name].totalMin += parseInt(l.status.match(/\d+/) || [0]);
+        });
+        document.getElementById('late-summary-body').innerHTML = Object.entries(lates).map(([n, d]) => `<tr><td class="py-2">${n}</td><td class="text-center text-rose-500">${d.count}x</td><td class="text-right">${d.totalMin}m</td></tr>`).join('');
     }
-
-    function downloadPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.autoTable({ head: [['Nama', 'Tanggal', 'Jam', 'Tipe', 'Status']], body: fullData.logs.map(l => [l.name, l.date, formatTime(l.time), l.type, l.status]), headStyles: {fillColor: [219, 39, 119]} });
-        addAuditLog("Admin mengunduh laporan PDF"); doc.save('GARDENA_REKAP.pdf');
-    }
-
-    function downloadExcel() {
-        const ws = XLSX.utils.json_to_sheet(fullData.logs.map(l => ({ "Nama": l.name, "Tanggal": l.date, "Jam": formatTime(l.time), "Tipe": l.type, "Status": l.status })));
-        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Rekap"); XLSX.writeFile(wb, `REKAP_GARDENA.xlsx`);
-        addAuditLog("Admin mengunduh laporan Excel");
-    }
-
-    window.onload = () => { if (localStorage.getItem('gardena_dark') === 'true') document.body.classList.add('dark'); };
 </script>
 </body>
 </html>
