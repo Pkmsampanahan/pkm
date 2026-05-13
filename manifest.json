@@ -1,7 +1,10 @@
 {
-  "name": "GARDENA",
+  "name": "GARDENA ADMIN",
   "short_name": "GARDENA",
-  "start_url": "index.html",
+  "start_url": "setting.html",
+  "start_url": "rekapan.html",
+  "start_url": "monitor.html",
+  "start_url": "publik.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
