@@ -476,6 +476,10 @@
             // MAP SAKLAR BARU
             document.getElementById('toggle-auto-detect').checked = config.AUTO_DETECT === true || config.AUTO_DETECT === "true";
 
+            // SINKRONISASI STATUS LIBUR DARI DB
+            const isHolidayDb = config.IS_HOLIDAY === true || config.IS_HOLIDAY === "true";
+            updateHolidayUI(isHolidayDb);
+
             renderUserList(res.officers);
             renderAuditLog(config.LAST_UPDATE);
         } catch (e) { 
@@ -564,23 +568,25 @@
             }
         };
 
+        // CEK STATUS TOMBOL LIBUR SAAT INI
+        const btnHoliday = document.getElementById('btn-holiday');
+        const statusLibur = btnHoliday.classList.contains('bg-red-50');
+
         const payload = {
             LAT: document.getElementById('set-lat').value,
             LNG: document.getElementById('set-lng').value,
             RADIUS: document.getElementById('set-radius').value,
             QR_TEXT: document.getElementById('set-qr').value,
-            // Simpan kedua threshold
             THRESHOLD_LOGIN: document.getElementById('set-accuracy-login').value,
             THRESHOLD_ABSEN: document.getElementById('set-accuracy-absen').value,
-            // Kompatibilitas lama
             THRESHOLD: document.getElementById('set-accuracy-absen').value, 
             ALLOW_REG: document.getElementById('toggle-reg').checked,
             MAINTENANCE: document.getElementById('toggle-mt').checked,
             BYPASS_GPS: document.getElementById('toggle-gps').checked,
-            // Tambahkan baris ini agar 'AUTO_DETECT' terbuat otomatis di Sheets
             AUTO_DETECT: document.getElementById('toggle-auto-detect').checked,
             WORK_DAYS: document.getElementById('set-work-days').value,
             SHIFT_DATA: JSON.stringify(shiftData),
+            IS_HOLIDAY: statusLibur, // VARIABEL BARU DISIMPAN KE DATABASE
             LAST_UPDATE: new Date().toLocaleString('id-ID')
         };
 
@@ -589,7 +595,7 @@
             const result = await response.json();
             if (result.status === "success") { 
                 alert('Sistem Berhasil Diperbarui! ✅'); 
-                location.href = '#'; 
+                loadCurrentConfig(); // Refresh data setelah simpan
             }
         } catch (e) { 
             alert('Gagal Menyimpan Ke Cloud.'); 
@@ -598,10 +604,17 @@
         }
     }
 
+    // Fungsi Toggle Tombol (Hanya visual sementara sebelum ditekan Simpan Perubahan)
     function toggleHoliday() {
         const btn = document.getElementById('btn-holiday');
-        const isHoliday = btn.classList.contains('bg-red-50');
-        if(!isHoliday) {
+        const currentlyActive = btn.classList.contains('bg-red-50');
+        updateHolidayUI(!currentlyActive);
+    }
+
+    // Fungsi Helper untuk Update Tampilan Tombol
+    function updateHolidayUI(isActive) {
+        const btn = document.getElementById('btn-holiday');
+        if(isActive) {
             btn.classList.add('bg-red-50', 'text-red-500', 'border-red-200');
             btn.innerText = "🛑 MODE LIBUR AKTIF (ABSEN MATI)";
         } else {
