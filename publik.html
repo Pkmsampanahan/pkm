@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Informasi Kehadiran Nakes - GARDENA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root { 
@@ -190,7 +190,7 @@
             <h2 id="total-ready" class="text-3xl md:text-5xl font-black">0</h2>
         </div>
         <div class="bg-amber-500 p-5 md:p-6 rounded-[24px] text-white shadow-lg flex flex-col justify-center">
-            <p class="text-[9px] md:text-[10px] font-black uppercase opacity-80 tracking-wider">Tugas Dinas Luar</p>
+            <p class="text-[9px] md:text-[10px] font-black uppercase opacity-80 tracking-wider">Dinas Luar & Izin Resmi</p>
             <h2 id="total-dl" class="text-3xl md:text-5xl font-black">0</h2>
         </div>
         <div class="bg-slate-800 p-5 md:p-6 rounded-[24px] text-white shadow-lg flex flex-col justify-center">
@@ -247,7 +247,11 @@
 
             const html = officers.map(name => {
                 const logs = logsToday.filter(l => l.name === name);
-                const isDL = logs.some(l => l.type === 'DL');
+                
+                // DISELARASKAN PENUH: Mendukung seluruh status khusus resmi agar tidak salah terbaca "Belum Hadir" oleh publik
+                const statusKhusus = ['DL', 'CUTI', 'IJIN', 'SAKIT'];
+                const logKhusus = logs.find(l => statusKhusus.includes(l.type));
+                
                 const hasIn = logs.some(l => l.type === 'MASUK');
                 const hasOut = logs.some(l => l.type === 'PULANG');
                 
@@ -256,12 +260,11 @@
                 let dotClass = "off";
                 let subNote = "Sesuai Jadwal";
 
-                if (isDL) {
-                    statusText = "DINAS LUAR";
-                    colorClass = "bg-amber-100 text-amber-600";
+                if (logKhusus) {
+                    statusText = logKhusus.type === 'DL' ? "DINAS LUAR" : logKhusus.type;
+                    colorClass = logKhusus.type === 'DL' ? "bg-amber-100 text-amber-600" : "bg-indigo-100 text-indigo-600";
                     dotClass = "dl";
-                    const dlLog = logs.find(l => l.type === 'DL');
-                    subNote = dlLog.note || "Tugas Lapangan";
+                    subNote = logKhusus.note || "Izin Resmi Terkonfirmasi";
                     dlCount++;
                 } else if (hasIn && !hasOut) {
                     statusText = "ADA DI TEMPAT";
@@ -275,12 +278,11 @@
                     dotClass = "off";
                     subNote = "Tugas Selesai";
                 } else {
-                    // Petugas yang benar-benar belum absen apa-apa
                     waitingOfficers.push({ name, reason: "MENUNGGU MASUK" });
                 }
 
-                // Tambahan: Jika sudah masuk tapi belum pulang setelah jam 14:00 (misal jam pulang)
-                if (hasIn && !hasOut && !isDL && now.getHours() >= 14) {
+                // Tambahan: Jika sudah masuk tapi belum pulang setelah jam 14:00 (Sesi pulang kerja dibuka)
+                if (hasIn && !hasOut && !logKhusus && now.getHours() >= 14) {
                     waitingOfficers.push({ name, reason: "BELUM ABSEN PULANG" });
                 }
 
