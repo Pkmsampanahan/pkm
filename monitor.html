@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Dashboard Admin - GARDENA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -100,6 +100,16 @@
         .level-low { background: #fee2e2; color: #ef4444; } 
         .level-mid { background: #fef9c3; color: #ca8a04; } 
         .level-high { background: #dcfce7; color: #16a34a; } 
+
+        .app-version-tag {
+            font-size: 9px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
 
         .scroll-area { max-height: 500px; overflow-y: auto; scrollbar-width: none; }
         .skeleton { background: linear-gradient(110deg, #eceff1 8%, #f5f5f5 18%, #eceff1 33%); background-size: 200% 100%; animation: shine 1.5s linear infinite; }
@@ -201,7 +211,10 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-2xl font-black tracking-tighter text-white">ADMIN PANEL</h1>
-                <p class="text-[10px] font-bold opacity-80 uppercase tracking-widest text-white">Monitoring GARDENA</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <p class="text-[10px] font-bold opacity-80 uppercase tracking-widest text-white">Monitoring GARDENA</p>
+                    <span class="app-version-tag">VER 1.2.6</span>
+                </div>
             </div>
             <div class="flex gap-2">
                 <button onclick="toggleDarkMode()" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white">🌓</button>
@@ -271,7 +284,13 @@
                 <select id="filter-month" onchange="applyFilters(); renderHeatmap();" class="filter-input">
                     <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
                 </select>
-                <select id="filter-year" onchange="applyFilters(); renderHeatmap();" class="filter-input"><option value="2025">2025</option><option value="2026">2026</option></select>
+                <select id="filter-year" onchange="applyFilters(); renderHeatmap();" class="filter-input">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
             </div>
         </div>
     </div>
@@ -293,6 +312,7 @@
 </div>
 
 <script>
+    const APP_VERSION = "1.2.6"; // Menyelaraskan konstanta versi aplikasi
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyDeWZyUvXj3qVOZXviPgN-d42jswXgkm2cvYlA7OBgGSPX-G_rxYti_rJWGVdpmi_f2A/exec";
     const SECRET_PIN = "12345";
     let currentPin = "";
@@ -300,21 +320,31 @@
     let selectedRows = [];
     let attendanceChart = null;
 
-    // --- FIX: FUNGSI FORMAT WAKTU AGAR TIDAK MUNCUL 1899 ---
+    // --- VERSION CHECK LOGIC ---
+    function checkAppVersion() {
+        const savedVersion = localStorage.getItem('gardena_version_monitor');
+        if (savedVersion !== APP_VERSION) {
+            localStorage.setItem('gardena_version_monitor', APP_VERSION);
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) { registration.unregister(); }
+                });
+            }
+            window.location.reload(true); 
+        }
+    }
+
     function formatTime(t) {
         if (!t || t === "--:--") return "--:--";
-        // Jika input string mengandung informasi tanggal ISO (T)
         if (typeof t === 'string' && t.includes('T')) {
             const dateObj = new Date(t);
             if (!isNaN(dateObj.getTime())) {
                 return dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
             }
         }
-        // Jika input sudah string waktu murni HH:mm
         if (typeof t === 'string' && t.includes(':') && t.length <= 8) {
             return t.substring(0, 5);
         }
-        // Jika input objek Date
         const d = new Date(t);
         if (!isNaN(d.getTime())) {
             const hh = String(d.getHours()).padStart(2, '0');
@@ -347,6 +377,7 @@
     }
 
     async function initAdmin() {
+        checkAppVersion(); // Pengecekan pembersihan cache berkas
         if (localStorage.getItem('gardena_dark') === 'true') document.body.classList.add('dark');
         const now = new Date();
         document.getElementById('filter-month').value = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -376,7 +407,9 @@
         const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
         const uniqueOfficers = [...new Set(fullData.officers)].length;
         const logsToday = fullData.logs.filter(l => l.date === today);
-        const hadirToday = [...new Set(logsToday.filter(l => l.type === 'MASUK' || l.type === 'DL').map(l => l.name))].length;
+        const statusKhusus = ['MASUK', 'DL', 'CUTI', 'IJIN', 'SAKIT']; // Penyelarasan array status khusus
+        
+        const hadirToday = [...new Set(logsToday.filter(l => statusKhusus.includes(l.type)).map(l => l.name))].length;
         
         const monthNow = document.getElementById('filter-month').value;
         const monthPrev = (parseInt(monthNow) - 1).toString().padStart(2, '0');
@@ -393,20 +426,25 @@
         document.getElementById('stat-progress').style.width = (hadirToday/uniqueOfficers)*100 + "%";
         document.getElementById('stat-total').innerText = uniqueOfficers;
         document.getElementById('stat-hadir').innerText = hadirToday;
-        document.getElementById('stat-dl').innerText = logsToday.filter(l => l.type === 'DL').length;
+        
+        // Menghitung status dinas luar & penugasan non-hadir rutin lainnya
+        document.getElementById('stat-dl').innerText = logsToday.filter(l => ['DL', 'CUTI', 'IJIN', 'SAKIT'].includes(l.type)).length;
     }
 
+    // --- DISELARASKAN PENUH: Menghitung status khusus sebagai tanda "hadir/terjadwal" agar indikator tidak merah absolut ---
     function renderHeatmap() {
         const container = document.getElementById('heatmap-calendar');
         const month = parseInt(document.getElementById('filter-month').value);
         const year = parseInt(document.getElementById('filter-year').value);
         const uniqueOfficers = [...new Set(fullData.officers)].length;
         const daysInMonth = new Date(year, month, 0).getDate();
+        const statusKhusus = ['MASUK', 'DL', 'CUTI', 'IJIN', 'SAKIT']; // Disinkronkan dengan skema kehadiran log
+        
         let html = '';
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${d.toString().padStart(2,'0')}/${month.toString().padStart(2,'0')}/${year}`;
-            const hadir = [...new Set(fullData.logs.filter(l => l.date === dateStr && (l.type === 'MASUK' || l.type === 'DL')).map(l => l.name))].length;
-            const percent = (hadir / uniqueOfficers) * 100;
+            const hadir = [...new Set(fullData.logs.filter(l => l.date === dateStr && statusKhusus.includes(l.type)).map(l => l.name))].length;
+            const percent = uniqueOfficers > 0 ? (hadir / uniqueOfficers) * 100 : 0;
             const lvl = percent > 80 ? 'level-high' : percent > 50 ? 'level-mid' : 'level-low';
             html += `<div class="heatmap-cell ${lvl}">${d}</div>`;
         }
@@ -425,8 +463,16 @@
             <div class="swipe-container">
                 <div class="swipe-action" onclick="deleteLog(${l.row || idx}, '${l.name}')">🗑️</div>
                 <div id="log-${l.row || idx}" class="log-item shadow-sm">
-                    <div class="flex items-center gap-3"><input type="checkbox" onchange="updateSelection()" value="${l.row || idx}"><div><p class="text-xs font-black uppercase text-slate-800 dark:text-white">${l.name}</p><p class="text-[9px] font-bold text-slate-400">${l.date} • ${formatTime(l.time)}</p></div></div>
-                    <div class="text-right"><span class="status-pill ${l.type==='MASUK'?'bg-emerald-100 text-emerald-600':'bg-pink-100 text-pink-600'}">${l.type}</span></div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" onchange="updateSelection()" value="${l.row || idx}">
+                        <div>
+                            <p class="text-xs font-black uppercase text-slate-800 dark:text-white">${l.name}</p>
+                            <p class="text-[9px] font-bold text-slate-400">${l.date} • ${formatTime(l.time)}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="status-pill ${['MASUK', 'HADIR'].includes(l.type) ? 'bg-emerald-100 text-emerald-600' : l.type === 'PULANG' ? 'bg-pink-100 text-pink-600' : 'bg-indigo-100 text-indigo-600'}">${l.type}</span>
+                    </div>
                 </div>
             </div>`).join('') || '<p class="text-center text-[10px] text-slate-300 py-10 uppercase">Data Kosong</p>';
     }
@@ -439,11 +485,13 @@
     function renderChart() {
         const ctx = document.getElementById('weeklyChart').getContext('2d');
         const last7 = []; const counts = [];
+        const statusKhusus = ['MASUK', 'DL', 'CUTI', 'IJIN', 'SAKIT'];
+        
         for(let i=6; i>=0; i--) {
             const d = new Date(); d.setDate(d.getDate() - i);
             const ds = d.toLocaleDateString('id-ID', {day:'2-digit', month:'2-digit', year:'numeric'}).replace(/\./g,'/');
             last7.push(d.toLocaleDateString('id-ID', {weekday:'short'}));
-            counts.push(fullData.logs.filter(l => l.date === ds && (l.type==='MASUK'||l.type==='DL')).length);
+            counts.push(fullData.logs.filter(l => l.date === ds && statusKhusus.includes(l.type)).length);
         }
         if(attendanceChart) attendanceChart.destroy();
         attendanceChart = new Chart(ctx, {
@@ -454,7 +502,8 @@
 
     function checkAbsentees() {
         const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\./g, '/');
-        const hadir = fullData.logs.filter(l => l.date === today && (l.type==='MASUK'||l.type==='DL')).map(l => l.name);
+        const statusKhusus = ['MASUK', 'DL', 'CUTI', 'IJIN', 'SAKIT'];
+        const hadir = fullData.logs.filter(l => l.date === today && statusKhusus.includes(l.type)).map(l => l.name);
         const absent = [...new Set(fullData.officers)].filter(n => !hadir.includes(n));
         const alertBox = document.getElementById('absent-alert');
         if (absent.length > 0 && new Date().getHours() >= 8) {
@@ -482,6 +531,7 @@
     function toggleSelectAll() { const cbs = document.querySelectorAll('#admin-log-list input[type="checkbox"]'); const all = Array.from(cbs).every(c => c.checked); cbs.forEach(c => c.checked = !all); updateSelection(); }
     async function deleteLog(id, name) { if(confirm(`Hapus ${name}?`)) { await fetch(`${WEB_APP_URL}?action=deleteLog&data=${id}`); loadData(); } }
     async function deleteSelected() { const ids = Array.from(document.querySelectorAll('#admin-log-list input[type="checkbox"]:checked')).map(c => c.value); if(confirm(`Hapus ${ids.length} data?`)) { for(let id of ids) await fetch(`${WEB_APP_URL}?action=deleteLog&data=${id}`); loadData(); } }
+    
     function renderLateSummary() {
         const lates = {};
         fullData.logs.filter(l => l.status?.toUpperCase().includes('TERLAMBAT')).forEach(l => {
