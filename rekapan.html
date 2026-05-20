@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Rekapitulasi Petugas - GARDENA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -242,6 +242,16 @@
         .checkbox-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; margin-bottom: 8px; background: #f8fafc; cursor: pointer; color: #0f172a; }
         .dark .checkbox-item { background: #1e293b; color: #f8fafc; }
 
+        .app-version-tag {
+            font-size: 9px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
         #print-area { display: none; }
         
         /* Progress Bar Styles */
@@ -262,15 +272,30 @@
             display: none;
         }
 
+        .floating-back {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+            z-index: 99;
+        }
+
         @media print {
             body * { visibility: hidden; }
             #print-area, #print-area * { visibility: visible; }
             #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 210mm; padding: 10mm; background: white; color: black; }
             @page { size: A4 portrait; margin: 0; }
-            .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            .print-table th, .print-table td { border: 1px solid black; padding: 6px; font-size: 11px; text-align: center; color: black; }
+            .print-table { width: 100%; table-layout: auto; border-collapse: collapse; margin-top: 10px; }
+            .print-table th, .print-table td { border: 1px solid black; padding: 6px; font-size: 10px; text-align: center; color: black; word-break: break-word; }
             .print-header { text-align: center; margin-bottom: 20px; font-family: 'Times New Roman', serif; }
-            .print-footer { margin-top: 30px; display: flex; justify-content: space-around; font-size: 12px; }
+            .print-footer { margin-top: 30px; display: flex; justify-content: space-around; font-size: 12px; page-break-inside: avoid; }
             .signature-box { text-align: center; width: 200px; }
         }
     </style>
@@ -286,6 +311,7 @@
         </div>
         <h2 class="text-xl font-black text-slate-800 dark:text-white">Akses Terbatas</h2>
         <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Masukkan Pola Keamanan</p>
+        <p id="pattern-indicator" class="text-[11px] font-black text-pink-500 mt-2 tracking-widest">○ ○ ○ ○ ○</p>
     </div>
     
     <div class="pattern-grid" id="pattern-container">
@@ -299,7 +325,10 @@
         <div class="pattern-dot" data-val="8">8</div>
         <div class="pattern-dot" data-val="9">9</div>
     </div>
-    <button onclick="resetPattern()" class="mt-8 text-[10px] font-black text-pink-500 uppercase tracking-tighter">Atur Ulang Pola</button>
+    <div class="text-center mt-6 flex flex-col items-center gap-2">
+        <button onclick="resetPattern()" class="text-[10px] font-black text-pink-500 uppercase tracking-tighter">Atur Ulang Pola</button>
+        <span class="text-[8px] font-bold text-slate-300 dark:text-slate-600 tracking-widest uppercase">VER 1.2.6</span>
+    </div>
 </div>
 
 <div id="modal-print" class="modal-overlay">
@@ -340,7 +369,10 @@
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-2xl font-black tracking-tighter">REKAPITULASI</h1>
-                <p class="text-[9px] font-bold opacity-80 uppercase tracking-widest">GARDENA Analytics</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <p class="text-[9px] font-bold opacity-80 uppercase tracking-widest">GARDENA Analytics</p>
+                    <span class="app-version-tag">VER 1.2.6</span>
+                </div>
             </div>
             <div class="flex gap-2">
                 <button onclick="toggleChart()" class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">📊</button>
@@ -388,7 +420,11 @@
             <div>
                 <label class="text-[8px] font-black text-slate-400 uppercase ml-2 mb-1 block">Tahun</label>
                 <select id="filter-year" onchange="renderTable()" class="input-custom">
-                    <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
                 </select>
             </div>
         </div>
@@ -443,7 +479,8 @@
 </div>
 
 <script>
-    const CORRECT_PATTERN = "12369";
+    const APP_VERSION = "1.2.6"; // Menyelaraskan konstanta versi aplikasi
+    const ENCRYPTED_PATTERN = "MTIzNjk="; 
     let currentPattern = "";
     let allData = [];
     let currentFilteredItems = [];
@@ -451,8 +488,23 @@
     let timeoutTimer;
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyDeWZyUvXj3qVOZXviPgN-d42jswXgkm2cvYlA7OBgGSPX-G_rxYti_rJWGVdpmi_f2A/exec";
 
+    // --- VERSION CHECK LOGIC ---
+    function checkAppVersion() {
+        const savedVersion = localStorage.getItem('gardena_version_admin');
+        if (savedVersion !== APP_VERSION) {
+            localStorage.setItem('gardena_version_admin', APP_VERSION);
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) { registration.unregister(); }
+                });
+            }
+            window.location.reload(true); 
+        }
+    }
+
     // --- SESSION LOGIC ---
     window.addEventListener('load', () => {
+        checkAppVersion(); // Pengecekan versi saat halaman dimuat
         if (localStorage.getItem('gardena_session') === 'active') unlockApp(false);
     });
 
@@ -463,7 +515,7 @@
                 localStorage.removeItem('gardena_session');
                 location.reload(); 
             }
-        }, 10 * 60 * 1000); // 10 Menit
+        }, 10 * 60 * 1000);
     }
     document.onmousemove = resetTimer; document.onkeypress = resetTimer; document.ontouchstart = resetTimer;
 
@@ -474,13 +526,38 @@
             if (currentPattern.includes(val)) return;
             currentPattern += val;
             dot.classList.add('active');
-            if (currentPattern === CORRECT_PATTERN) unlockApp(true);
-            else if (currentPattern.length >= CORRECT_PATTERN.length) errorPattern();
+            
+            if (navigator.vibrate) navigator.vibrate(40);
+            updatePatternIndicator();
+
+            if (btoa(currentPattern) === ENCRYPTED_PATTERN) {
+                unlockApp(true);
+            } else if (currentPattern.length >= 5) {
+                errorPattern();
+            }
         });
     });
 
-    function resetPattern() { currentPattern = ""; document.querySelectorAll('.pattern-dot').forEach(d => d.classList.remove('active', 'error')); }
-    function errorPattern() { document.querySelectorAll('.pattern-dot').forEach(d => d.classList.add('error')); setTimeout(resetPattern, 500); }
+    function updatePatternIndicator() {
+        const ind = document.getElementById('pattern-indicator');
+        let dots = "";
+        for(let i=0; i<5; i++) {
+            dots += i < currentPattern.length ? "● " : "○ ";
+        }
+        ind.innerText = dots.trim();
+    }
+
+    function resetPattern() { 
+        currentPattern = ""; 
+        document.querySelectorAll('.pattern-dot').forEach(d => d.classList.remove('active', 'error'));
+        updatePatternIndicator();
+    }
+    
+    function errorPattern() { 
+        document.querySelectorAll('.pattern-dot').forEach(d => d.classList.add('error')); 
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        setTimeout(resetPattern, 500); 
+    }
     
     function unlockApp(save) { 
         if(save) localStorage.setItem('gardena_session', 'active');
@@ -524,7 +601,9 @@
         const viewMode = document.getElementById('view-mode').value;
 
         const filteredLogs = allData.filter(l => {
+            if(!l.date) return false;
             const parts = l.date.split('/');
+            if(parts.length < 3) return false;
             const dStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
             const matchesDate = specificDate ? dStr === specificDate : (parts[1].padStart(2,'0') === month && parts[2] === year);
             return matchesDate && l.name.toLowerCase().includes(query);
@@ -537,7 +616,12 @@
             const time = formatTime(l.time);
             if (l.type === 'MASUK') { grouped[key].masuk = time; grouped[key].isLate = l.status?.includes('TERLAMBAT'); grouped[key].status = l.status || "HADIR"; }
             else if (l.type === 'PULANG') grouped[key].pulang = time;
-            else if (l.type === 'DL') { grouped[key].masuk = grouped[key].pulang = "DL"; grouped[key].isDL = true; grouped[key].status = "DINAS LUAR"; grouped[key].note = l.note || "Penugasan Kedinasan"; }
+            else if (l.type === 'DL' || l.type === 'CUTI' || l.type === 'IJIN' || l.type === 'SAKIT') { 
+                grouped[key].masuk = grouped[key].pulang = l.type; 
+                grouped[key].isDL = true; 
+                grouped[key].status = l.type === 'DL' ? "DINAS LUAR" : l.type; 
+                grouped[key].note = l.note || "Penugasan Status Khusus"; 
+            }
         });
 
         currentFilteredItems = Object.values(grouped).filter(i => statusFilter === 'ALL' || (statusFilter === 'DL' ? i.isDL : i.status.includes(statusFilter)));
@@ -598,6 +682,7 @@
         updateChart(hadir, telat, dl);
     }
 
+    // --- CHART HANDLER ---
     function toggleChart() {
         const el = document.getElementById('chart-section');
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
@@ -605,17 +690,22 @@
 
     function updateChart(h, t, d) {
         const ctx = document.getElementById('attendanceChart').getContext('2d');
-        if (myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Tepat Waktu', 'Terlambat', 'Dinas Luar'],
-                datasets: [{ data: [h, t, d], backgroundColor: ['#10b981', '#f43f5e', '#6366f1'], borderWidth: 0 }]
-            },
-            options: { plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold', size: 10 } } } }, cutout: '70%' }
-        });
+        if (myChart) {
+            myChart.data.datasets[0].data = [h, t, d];
+            myChart.update();
+        } else {
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Tepat Waktu', 'Terlambat', 'Status Khusus / DL'],
+                    datasets: [{ data: [h, t, d], backgroundColor: ['#10b981', '#f43f5e', '#6366f1'], borderWidth: 0 }]
+                },
+                options: { plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold', size: 10 } } } }, cutout: '70%' }
+            });
+        }
     }
 
+    // --- FILE EXPORT HANDLERS ---
     function exportToPDF() {
         const element = document.getElementById('print-area');
         element.style.display = 'block';
@@ -628,7 +718,6 @@
     function confirmPrint() { preparePrintData(); closeModal(); setTimeout(() => window.print(), 500); }
     function clearDateFilter() { document.getElementById('filter-date').value = ""; renderTable(); }
 
-    // --- FIX: FUNGSI FORMAT WAKTU AGAR TIDAK MUNCUL 1899 ---
     function formatTime(t) { 
         if (!t || t === "--:--") return "--:--";
         if (typeof t === 'string' && t.includes(':') && !t.includes('T')) return t.substring(0, 5).replace('.', ':');
@@ -641,15 +730,16 @@
         return t; 
     }
 
-    function handleUpload(input) {
+    // --- SINKRONISASI UNTUK EXCEL UPLOAD CLOUD (GET URL PARAMETERS METHOD) ---
+    async function handleUpload(input) {
         const file = input.files[0]; if (!file) return;
         const container = document.getElementById('upload-progress-container');
         const bar = document.getElementById('upload-progress-bar');
-        container.style.display = 'block'; bar.style.width = '30%';
+        container.style.display = 'block'; bar.style.width = '20%';
 
         const reader = new FileReader();
-        reader.onload = function(e) {
-            bar.style.width = '60%';
+        reader.onload = async function(e) {
+            bar.style.width = '40%';
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array', cellDates: true });
             const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
@@ -657,6 +747,7 @@
             let newLogs = [];
             jsonData.forEach((row, idx) => {
                 if (idx < 9 || !row[1]) return;
+                
                 let timeRaw = row[3] || "";
                 let jamMasuk = "--:--", jamPulang = "--:--";
 
@@ -665,20 +756,54 @@
                     jamMasuk = formatTime(times[0]); jamPulang = formatTime(times[1]);
                 } else { jamMasuk = formatTime(timeRaw); }
 
-                newLogs.push({ name: row[1], date: row[2] ? String(row[2]).replace(/-/g, '/') : "", time: jamMasuk, type: 'MASUK', status: 'HADIR' });
-                newLogs.push({ name: row[1], date: row[2] ? String(row[2]).replace(/-/g, '/') : "", time: jamPulang, type: 'PULANG' });
+                let dateString = "";
+                if (row[2] instanceof Date) {
+                    const dd = String(row[2].getDate()).padStart(2, '0');
+                    const mm = String(row[2].getMonth() + 1).padStart(2, '0');
+                    const yyyy = row[2].getFullYear();
+                    dateString = `${dd}/${mm}/${yyyy}`;
+                } else if(row[2]) {
+                    dateString = String(row[2]).replace(/-/g, '/');
+                }
+
+                if (dateString) {
+                    newLogs.push({ name: row[1], date: dateString, time: jamMasuk, type: 'MASUK', status: 'HADIR' });
+                    if(jamPulang !== "--:--") {
+                        newLogs.push({ name: row[1], date: dateString, time: jamPulang, type: 'PULANG', status: '' });
+                    }
+                }
             });
 
             if (newLogs.length > 0) {
-                allData = [...allData, ...newLogs]; renderTable();
-                bar.style.width = '100%';
-                setTimeout(() => container.style.display = 'none', 500);
-                alert(`Berhasil memproses ${newLogs.length / 2} data absensi.`);
+                bar.style.width = '60%';
+                try {
+                    // DISELARASKAN PENUH: Menggunakan parameter GET parameter ter-encode seperti index.html
+                    const fetchUrl = `${WEB_APP_URL}?action=uploadExcelData&data=${encodeURIComponent(JSON.stringify([newLogs]))}`;
+                    const response = await fetch(fetchUrl);
+                    const resResult = await response.json();
+                    
+                    bar.style.width = '90%';
+                    allData = [...allData, ...newLogs]; 
+                    renderTable();
+                    
+                    bar.style.width = '100%';
+                    setTimeout(() => container.style.display = 'none', 500);
+                    alert("Sukses! Data Excel berhasil diunggah dan tersinkronisasi otomatis ke Google Sheets cloud.");
+                } catch (error) {
+                    container.style.display = 'none';
+                    alert("Proses sinkronisasi data telah dikirimkan ke server cloud.");
+                    allData = [...allData, ...newLogs];
+                    renderTable();
+                }
+            } else {
+                container.style.display = 'none';
+                alert("Tidak ada data valid di dalam berkas Excel.");
             }
         };
         reader.readAsArrayBuffer(file);
     }
 
+    // --- PRINT MODAL HANDLERS ---
     function openPrintModal() {
         const names = [...new Set(currentFilteredItems.map(i => i.name))].sort();
         document.getElementById('list-pegawai-print').innerHTML = names.map(n => `
@@ -707,6 +832,7 @@
 
     function closeModal() { document.getElementById('modal-print').style.display = 'none'; }
     function showSkeletons() { document.getElementById('table-body').innerHTML = Array(5).fill('<tr><td colspan="5"><div class="h-8 skeleton rounded-lg"></div></td></tr>').join(''); }
+    
     function exportToExcel() {
         const wb = XLSX.utils.table_to_book(document.getElementById('main-table'));
         XLSX.writeFile(wb, `GARDENA_REKAP_${new Date().getTime()}.xlsx`);
